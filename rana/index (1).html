@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#dff3d7">
+<title>¡Ahora no! — Rana y moscas (V3)</title>
+<style>
+  :root{
+    --bg:#dff3d7;
+    --ink:#17351f;
+  }
+  *{box-sizing:border-box}
+  html,body{
+    margin:0;width:100%;height:100%;overflow:hidden;
+    font-family:system-ui,-apple-system,Segoe UI,sans-serif;
+    background:var(--bg);color:var(--ink)
+  }
+  button{font:inherit}
+  #app{
+    width:100%;height:100%;position:relative;
+    user-select:none;-webkit-user-select:none;touch-action:manipulation
+  }
+  .screen{position:absolute;inset:0;display:none}
+  .screen.active{display:flex}
+
+  #startScreen,#endScreen{
+    align-items:center;justify-content:center;flex-direction:column;gap:20px;
+    background:linear-gradient(#dff3d7,#c8e9ba);
+    text-align:center;padding:24px;
+  }
+  .title{
+    font-size:clamp(42px,8vw,92px);
+    font-weight:900;line-height:.95
+  }
+  .subtitle{
+    font-size:clamp(18px,2.6vw,30px);
+    font-weight:700;opacity:.82
+  }
+  .help{
+    font-size:clamp(14px,1.8vw,20px);
+    font-weight:650;opacity:.58;
+    max-width:720px
+  }
+  .frog-logo{
+    font-size:clamp(100px,20vw,210px);
+    filter:drop-shadow(0 8px 0 rgba(0,0,0,.08))
+  }
+  .start-btn,.again-btn{
+    border:0;border-radius:999px;padding:18px 42px;
+    background:#fff;color:#214b2c;font-weight:900;
+    font-size:clamp(24px,4vw,42px);
+    box-shadow:0 8px 0 rgba(52,100,56,.18);
+    cursor:pointer
+  }
+
+  #gameScreen{
+    background:linear-gradient(#d9f3ff 0 54%,#bfe6a8 54%);
+    cursor:pointer
+  }
+  #hud{
+    position:absolute;left:18px;right:18px;top:14px;
+    display:flex;justify-content:space-between;align-items:center;
+    pointer-events:none;z-index:5
+  }
+  #progress{
+    height:12px;width:min(42vw,420px);
+    background:rgba(255,255,255,.65);
+    border-radius:20px;overflow:hidden
+  }
+  #progressFill{
+    height:100%;width:0;background:#5f9e62;
+    border-radius:20px;transition:width .25s
+  }
+  #pauseHint{font-size:18px;font-weight:800;opacity:.55}
+  #stage{position:absolute;inset:0}
+  #stimulus{
+    position:absolute;left:50%;top:30%;
+    transform:translate(-50%,-50%) scale(.85);
+    font-size:clamp(80px,15vw,155px);
+    opacity:0;transition:opacity .12s,transform .12s;
+    filter:drop-shadow(0 6px 3px rgba(0,0,0,.12));
+    z-index:3
+  }
+  #stimulus.show{
+    opacity:1;transform:translate(-50%,-50%) scale(1)
+  }
+
+  #frog{
+    position:absolute;left:50%;bottom:7%;
+    transform:translateX(-50%);
+    width:min(46vw,430px);height:min(38vw,330px);
+    min-width:260px;min-height:210px;z-index:2
+  }
+  .body{
+    position:absolute;left:15%;right:15%;bottom:0;height:68%;
+    background:#62ad55;border-radius:50% 50% 42% 42%;
+    box-shadow:inset 0 -14px 0 rgba(40,100,40,.12)
+  }
+  .eye{
+    position:absolute;top:2%;width:31%;aspect-ratio:1;
+    background:#70bd60;border-radius:50%;
+    border:7px solid #62ad55;z-index:3
+  }
+  .eye.left{left:13%}.eye.right{right:13%}
+  .eye:after{
+    content:"";position:absolute;width:45%;height:45%;
+    background:#17261a;border-radius:50%;
+    left:28%;top:24%;transition:.15s
+  }
+  .mouth{
+    position:absolute;left:31%;right:31%;bottom:28%;height:17%;
+    border-bottom:7px solid #214b2c;border-radius:50%;z-index:4;
+    transition:.15s
+  }
+  #frog.sad .mouth{
+    border-bottom:0;border-top:7px solid #214b2c;
+    border-radius:50%;
+    bottom:21%;
+  }
+  #frog.sad .eye:after{
+    top:32%;
+  }
+
+  #tongue{
+    position:absolute;left:50%;bottom:38%;
+    width:22px;height:0;background:#ef7f92;
+    border-radius:15px;transform:translateX(-50%);
+    transform-origin:bottom;z-index:1;opacity:0
+  }
+  #tongue.snap{animation:tongue .38s ease-out}
+  @keyframes tongue{
+    0%{height:0;opacity:1}
+    45%{height:min(38vh,280px);opacity:1}
+    100%{height:0;opacity:0}
+  }
+
+  #feedback{
+    position:absolute;left:50%;top:47%;
+    transform:translate(-50%,-50%);
+    font-size:clamp(34px,6vw,70px);
+    font-weight:900;opacity:0;pointer-events:none;z-index:6
+  }
+  #feedback.pop{animation:pop .95s ease-out}
+  @keyframes pop{
+    0%{opacity:0;transform:translate(-50%,-50%) scale(.72)}
+    18%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+    72%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+    100%{opacity:0;transform:translate(-50%,-50%) scale(.94)}
+  }
+
+  #errorCard{
+    position:absolute;
+    left:50%;
+    top:46%;
+    transform:translate(-50%,-50%) scale(.8);
+    z-index:8;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:12px 22px;
+    border-radius:24px;
+    background:rgba(255,255,255,.94);
+    box-shadow:0 8px 24px rgba(0,0,0,.14);
+    opacity:0;
+    pointer-events:none;
+  }
+  #errorCard.show{animation:errorShow 1.35s ease-out}
+  #errorCard .stopIcon{font-size:clamp(52px,8vw,86px);line-height:1}
+  #errorCard .errorText{
+    font-size:clamp(22px,4vw,40px);
+    font-weight:900;
+    letter-spacing:.02em;
+  }
+  @keyframes errorShow{
+    0%{opacity:0;transform:translate(-50%,-50%) scale(.78)}
+    14%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+    78%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+    100%{opacity:0;transform:translate(-50%,-50%) scale(.94)}
+  }
+
+  #frog.nope{animation:nope .72s ease-in-out}
+  @keyframes nope{
+    0%{transform:translateX(-50%)}
+    15%{transform:translateX(calc(-50% - 12px)) rotate(-3deg)}
+    32%{transform:translateX(calc(-50% + 12px)) rotate(3deg)}
+    49%{transform:translateX(calc(-50% - 10px)) rotate(-2deg)}
+    66%{transform:translateX(calc(-50% + 8px)) rotate(2deg)}
+    100%{transform:translateX(-50%)}
+  }
+
+  #endFrog{font-size:clamp(90px,16vw,170px)}
+  #endText{font-size:clamp(30px,5vw,58px);font-weight:900}
+  #summaryCard{
+    width:min(760px,92vw);
+    background:rgba(255,255,255,.82);
+    border-radius:28px;
+    padding:22px 24px;
+    box-shadow:0 8px 0 rgba(52,100,56,.12)
+  }
+  .summary-main{
+    font-size:clamp(24px,4vw,42px);
+    font-weight:900;
+    margin-bottom:10px
+  }
+  .summary-sub{
+    font-size:clamp(16px,2.2vw,22px);
+    font-weight:700;
+    opacity:.78
+  }
+  .summary-progress{
+    margin:18px auto 8px;
+    width:min(520px,84%);
+    height:18px;
+    border-radius:999px;
+    background:#e5ecdF;
+    overflow:hidden
+  }
+  .summary-progress > div{
+    height:100%;
+    background:#69a766;
+    width:0;
+    transition:width .4s
+  }
+  .level-message{
+    margin-top:14px;
+    font-size:clamp(18px,2.6vw,26px);
+    font-weight:900
+  }
+
+  #teacherPanel{
+    position:absolute;right:14px;bottom:14px;
+    width:42px;height:42px;border-radius:50%;
+    background:rgba(255,255,255,.18);z-index:20;
+  }
+
+  #stats{
+    display:none;position:absolute;inset:8%;z-index:30;
+    background:rgba(255,255,255,.97);border-radius:28px;
+    padding:28px;overflow:auto;
+    box-shadow:0 12px 50px rgba(0,0,0,.22)
+  }
+  #stats.open{display:block}
+  #stats h2{font-size:32px;margin-top:0}
+  .stats-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+    gap:14px
+  }
+  .stat{
+    background:#edf7e8;border-radius:18px;padding:16px
+  }
+  .stat b{display:block;font-size:30px}
+  #closeStats{
+    margin-top:22px;border:0;border-radius:16px;
+    padding:12px 20px;font-weight:800;cursor:pointer
+  }
+  .small{opacity:.65;font-size:14px}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <section id="startScreen" class="screen active">
+    <div class="frog-logo">🐸</div>
+    <div class="title">¡AHORA NO!</div>
+    <div class="subtitle">Ayuda a la rana a comer solo moscas</div>
+    <div class="help">Haz clic, toca la pantalla o pulsa la barra espaciadora.</div>
+    <button class="start-btn" id="startBtn">JUGAR</button>
+  </section>
+
+  <section id="gameScreen" class="screen">
+    <div id="hud">
+      <div id="progress"><div id="progressFill"></div></div>
+      <div id="pauseHint">🐸 + 🪰</div>
+    </div>
+
+    <div id="stage">
+      <div id="stimulus"></div>
+      <div id="tongue"></div>
+
+      <div id="frog">
+        <div class="eye left"></div>
+        <div class="eye right"></div>
+        <div class="body"></div>
+        <div class="mouth"></div>
+      </div>
+
+      <div id="feedback"></div>
+
+      <div id="errorCard" aria-live="polite">
+        <div class="stopIcon">✋</div>
+        <div class="errorText">AHORA NO</div>
+      </div>
+    </div>
+
+    <div id="teacherPanel" aria-label="Zona docente"></div>
+  </section>
+
+  <section id="endScreen" class="screen">
+    <div id="endFrog">🐸</div>
+    <div id="endText">¡Partida terminada!</div>
+
+    <div id="summaryCard">
+      <div class="summary-main" id="summaryMain"></div>
+      <div class="summary-sub" id="summarySub"></div>
+      <div class="summary-progress"><div id="summaryBar"></div></div>
+      <div class="level-message" id="levelMessage"></div>
+    </div>
+
+    <button class="again-btn" id="againBtn">OTRA VEZ</button>
+  </section>
+
+  <div id="stats">
+    <h2>Zona docente</h2>
+    <div class="stats-grid" id="statsGrid"></div>
+    <p class="small">
+      Datos descriptivos de esta partida. No constituyen una evaluación diagnóstica.
+    </p>
+    <button id="closeStats">Cerrar</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const TOTAL = 24;
+  const STIM_MS = 1900;
+  const GAP_MIN = 650;
+  const GAP_MAX = 1050;
+
+  // Criterio provisional de avance:
+  // al menos 80% de respuestas globalmente correctas
+  // y no más de 1 error inhibitorio.
+  const PASS_TOTAL_PCT = 80;
+  const MAX_FALSE_POSITIVES = 1;
+
+  const GO = "🪰";
+  const NOGO = ["🦋","🐞","🐝"];
+
+  let running = false;
+  let trial = 0;
+  let current = null;
+  let responded = false;
+  let shownAt = 0;
+  let timer = null;
+  let sequence = [];
+  let holdTimer = null;
+
+  let stats = emptyStats();
+
+  const $ = id => document.getElementById(id);
+  const screens = ["startScreen","gameScreen","endScreen"];
+
+  function emptyStats(){
+    return {
+      go:0,
+      nogo:0,
+      goHits:0,
+      omissions:0,
+      falsePositives:0,
+      repeated:0,
+      latencies:[]
+    };
+  }
+
+  function show(id){
+    screens.forEach(s => $(s).classList.toggle("active", s === id));
+  }
+
+  function reset(){
+    trial = 0;
+    current = null;
+    responded = false;
+    stats = emptyStats();
+    $("progressFill").style.width = "0%";
+    $("frog").classList.remove("sad","nope");
+  }
+
+  function buildSequence(){
+    const seq = ["go","nogo","go","go","nogo","go"];
+    let sinceNoGo = 0;
+
+    while(seq.length < TOTAL){
+      let type =
+        Math.random() < 0.22 && sinceNoGo >= 2
+          ? "nogo"
+          : "go";
+
+      if(sinceNoGo >= 6) type = "nogo";
+
+      seq.push(type);
+      sinceNoGo = type === "go" ? sinceNoGo + 1 : 0;
+    }
+    return seq;
+  }
+
+  function start(){
+    reset();
+    sequence = buildSequence();
+    running = true;
+    show("gameScreen");
+    setTimeout(nextTrial, 500);
+  }
+
+  function nextTrial(){
+    if(!running) return;
+
+    if(trial >= TOTAL){
+      finish();
+      return;
+    }
+
+    $("frog").classList.remove("sad","nope");
+    current = sequence[trial];
+    responded = false;
+
+    const stim = $("stimulus");
+    stim.textContent =
+      current === "go"
+        ? GO
+        : NOGO[Math.floor(Math.random() * NOGO.length)];
+
+    if(current === "go") stats.go++;
+    else stats.nogo++;
+
+    shownAt = performance.now();
+    stim.classList.add("show");
+    timer = setTimeout(endTrial, STIM_MS);
+  }
+
+  function endTrial(){
+    clearTimeout(timer);
+    $("stimulus").classList.remove("show");
+    $("frog").classList.remove("sad","nope");
+
+    if(current === "go" && !responded){
+      stats.omissions++;
+    }
+
+    trial++;
+    $("progressFill").style.width = (trial / TOTAL * 100) + "%";
+
+    const gap =
+      GAP_MIN + Math.random() * (GAP_MAX - GAP_MIN);
+
+    setTimeout(nextTrial, gap);
+  }
+
+  function respond(){
+    if(!running || !$("gameScreen").classList.contains("active")) return;
+    if(!current || !$("stimulus").classList.contains("show")) return;
+
+    if(responded){
+      stats.repeated++;
+      return;
+    }
+
+    responded = true;
+    tongue();
+
+    if(current === "go"){
+      stats.goHits++;
+      stats.latencies.push(performance.now() - shownAt);
+
+      $("stimulus").classList.remove("show");
+      flash("😋");
+
+      clearTimeout(timer);
+      setTimeout(endTrial, 260);
+    } else {
+      stats.falsePositives++;
+
+      const frog = $("frog");
+      frog.classList.add("sad","nope");
+
+      const card = $("errorCard");
+      card.classList.remove("show");
+      void card.offsetWidth;
+      card.classList.add("show");
+
+      // Feedback explícito pero no punitivo:
+      // 1) la lengua sale y falla,
+      // 2) la rana niega,
+      // 3) aparece una mano de parada + "AHORA NO",
+      // 4) se deja tiempo suficiente para percibirlo antes del siguiente ensayo.
+      clearTimeout(timer);
+      setTimeout(endTrial, 1350);
+    }
+  }
+
+  function tongue(){
+    const t = $("tongue");
+    t.classList.remove("snap");
+    void t.offsetWidth;
+    t.classList.add("snap");
+  }
+
+  function flash(txt){
+    const f = $("feedback");
+    f.textContent = txt;
+    f.classList.remove("pop");
+    void f.offsetWidth;
+    f.classList.add("pop");
+  }
+
+  function finish(){
+    running = false;
+    current = null;
+    $("stimulus").classList.remove("show");
+
+    const correctNoGo = Math.max(0, stats.nogo - stats.falsePositives);
+    const totalCorrect = stats.goHits + correctNoGo;
+    const totalPresented = stats.go + stats.nogo;
+    const totalPct = totalPresented
+      ? Math.round(totalCorrect / totalPresented * 100)
+      : 0;
+
+    const passed =
+      totalPct >= PASS_TOTAL_PCT &&
+      stats.falsePositives <= MAX_FALSE_POSITIVES;
+
+    $("summaryMain").textContent =
+      `${totalCorrect} de ${totalPresented} respuestas correctas`;
+
+    $("summarySub").textContent =
+      `Moscas comidas: ${stats.goHits}/${stats.go} · Veces que consiguió esperar: ${correctNoGo}/${stats.nogo}`;
+
+    $("summaryBar").style.width = totalPct + "%";
+
+    $("levelMessage").textContent = passed
+      ? "🌟 ¡Preparado para el siguiente nivel!"
+      : `Para avanzar: ${PASS_TOTAL_PCT}% de aciertos y como máximo ${MAX_FALSE_POSITIVES} error al esperar.`;
+
+    $("endFrog").textContent = passed ? "🐸✨" : "🐸";
+
+    setTimeout(() => show("endScreen"), 350);
+  }
+
+  function openStats(){
+    const avg =
+      stats.latencies.length
+        ? Math.round(
+            stats.latencies.reduce((a,b) => a+b, 0) /
+            stats.latencies.length
+          )
+        : "—";
+
+    const goPct =
+      stats.go
+        ? Math.round(stats.goHits / stats.go * 100)
+        : 0;
+
+    const inhibitPct =
+      stats.nogo
+        ? Math.round(
+            (stats.nogo - stats.falsePositives) /
+            stats.nogo * 100
+          )
+        : 0;
+
+    const items = [
+      ["Estímulos", trial],
+      ["Go", stats.go],
+      ["No-Go", stats.nogo],
+      ["Aciertos Go", `${stats.goHits} (${goPct}%)`],
+      ["Omisiones", stats.omissions],
+      ["Errores inhibitorios", stats.falsePositives],
+      ["Respuestas repetidas", stats.repeated],
+      ["Latencia Go media", avg === "—" ? "—" : avg + " ms"],
+      [
+        "Inhibiciones correctas",
+        `${Math.max(0, stats.nogo - stats.falsePositives)} (${inhibitPct}%)`
+      ]
+    ];
+
+    $("statsGrid").innerHTML =
+      items.map(
+        ([label,value]) =>
+          `<div class="stat">${label}<b>${value}</b></div>`
+      ).join("");
+
+    $("stats").classList.add("open");
+  }
+
+  $("startBtn").addEventListener("click", e => {
+    e.stopPropagation();
+    start();
+  });
+
+  $("againBtn").addEventListener("click", e => {
+    e.stopPropagation();
+    start();
+  });
+
+  $("gameScreen").addEventListener("pointerdown", e => {
+    if(e.target.closest("#teacherPanel")) return;
+    respond();
+  });
+
+  document.addEventListener("keydown", e => {
+    if(
+      e.code === "Space" &&
+      $("gameScreen").classList.contains("active")
+    ){
+      e.preventDefault();
+
+      if(e.repeat){
+        if(
+          running &&
+          current &&
+          $("stimulus").classList.contains("show")
+        ){
+          stats.repeated++;
+        }
+        return;
+      }
+
+      respond();
+    }
+  });
+
+  $("closeStats").addEventListener("click", () => {
+    $("stats").classList.remove("open");
+  });
+
+  $("teacherPanel").addEventListener("pointerdown", e => {
+    e.stopPropagation();
+    holdTimer = setTimeout(openStats, 3000);
+  });
+
+  ["pointerup","pointerleave","pointercancel"].forEach(ev => {
+    $("teacherPanel").addEventListener(ev, () => clearTimeout(holdTimer));
+  });
+})();
+</script>
+</body>
+</html>
