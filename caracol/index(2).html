@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>El caracol impaciente — Prototipo 0.3</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+body{background:#dff5ff}.hidden{display:none!important}
+#app{position:relative;width:100vw;height:100vh;overflow:hidden;user-select:none;touch-action:manipulation;
+background:linear-gradient(#dff5ff 0 68%,#f3e8b5 68% 100%)}
+.sun{position:absolute;right:7vw;top:6vh;width:85px;height:85px;border-radius:50%;background:#ffe26b;box-shadow:0 0 0 14px #ffe26b44}
+.cloud{position:absolute;left:10vw;top:9vh;width:140px;height:40px;border-radius:30px;background:#fff;opacity:.8}
+.cloud:before,.cloud:after{content:"";position:absolute;border-radius:50%;background:#fff}
+.cloud:before{width:58px;height:58px;left:22px;top:-28px}.cloud:after{width:75px;height:75px;right:13px;top:-38px}
+.ground{position:absolute;left:-5%;right:-5%;bottom:-6%;height:34%;border-radius:50% 50% 0 0/25% 25% 0 0;background:#82c96a}
+#game{position:absolute;inset:0;cursor:pointer}
+#snail{position:absolute;left:9vw;bottom:18vh;font-size:clamp(90px,15vw,180px);filter:drop-shadow(0 8px 5px #0002);z-index:4}
+#snail.wait{animation:lean .65s infinite alternate ease-in-out}
+#snail.go{animation:go 1.15s forwards ease-in-out}
+#snail.sad{animation:sad .7s ease}
+@keyframes lean{to{transform:translateX(8px) rotate(2deg)}}@keyframes go{75%{transform:translateX(48vw)}100%{transform:translateX(51vw) scale(1.05)}}@keyframes sad{50%{transform:translateY(9px)}}
+#berry{position:absolute;right:11vw;bottom:22vh;font-size:clamp(80px,13vw,155px);filter:drop-shadow(0 8px 5px #0002);z-index:4;transition:.2s}
+#berry.wait{animation:tempt .85s infinite alternate ease-in-out}@keyframes tempt{to{transform:scale(1.07) rotate(2deg)}}
+#berry.ready{animation:pulse .55s infinite alternate ease-in-out;filter:drop-shadow(0 0 18px #fff) drop-shadow(0 7px 5px #0002)}
+@keyframes pulse{to{transform:scale(1.14)}}#berry.gone{opacity:0;transform:scale(.5)}
+#path{position:absolute;left:34vw;right:27vw;bottom:28vh;height:18px;border-radius:20px;background:linear-gradient(90deg,#fff39b,#fff,#fff39b);box-shadow:0 0 20px 10px #fff8a8bb;opacity:0;transform:scaleX(.2);transition:.2s;z-index:3}
+#path.show{opacity:1;transform:scaleX(1);animation:glow .55s infinite alternate}@keyframes glow{to{box-shadow:0 0 30px 15px #fff8a8ee}}
+#hand{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%) scale(.7);font-size:clamp(90px,15vw,180px);opacity:0;z-index:9;filter:drop-shadow(0 7px 5px #0003);transition:.12s}
+#hand.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+#readyIcon{position:absolute;left:50%;top:27%;transform:translate(-50%,-50%) scale(.5);font-size:clamp(70px,11vw,135px);opacity:0;z-index:8;transition:.15s}
+#readyIcon.show{opacity:1;transform:translate(-50%,-50%) scale(1);animation:pop .4s ease}@keyframes pop{60%{transform:translate(-50%,-50%) scale(1.18)}}
+#bird{position:absolute;right:-18vw;bottom:31vh;font-size:clamp(75px,12vw,145px);z-index:7}
+#bird.steal{animation:steal 1.5s ease-in-out forwards}@keyframes steal{0%{right:-18vw}50%,65%{right:9vw}100%{right:-22vw}}
+#dots{position:absolute;left:50%;top:3vh;transform:translateX(-50%);display:flex;gap:8px;z-index:10}.dot{width:12px;height:12px;border-radius:50%;background:#263b2c22}.dot.done{background:#263b2c88}
+#adult{position:absolute;right:14px;top:12px;z-index:30;border:0;border-radius:12px;background:#ffffffaa;padding:8px 10px;font-size:20px;cursor:pointer}
+#home{position:absolute;left:14px;top:12px;z-index:30;width:48px;height:48px;border:0;border-radius:14px;background:#ffffffcc;display:grid;place-items:center;font-size:25px;text-decoration:none;color:inherit;box-shadow:0 4px 12px #0002;cursor:pointer}
+#home:hover,#home:focus-visible{transform:scale(1.06);background:#fff}
+#home:active{transform:scale(.97)}
+.overlay{position:absolute;inset:0;background:#17352d66;display:flex;align-items:center;justify-content:center;z-index:50;padding:18px}
+.panel{width:min(720px,94vw);max-height:92vh;overflow:auto;background:#fffdf8;border-radius:30px;padding:clamp(20px,4vw,40px);text-align:center;box-shadow:0 15px 45px #0003}
+.start-art{font-size:clamp(80px,15vw,170px);margin:.15em}.play{width:105px;height:105px;border-radius:50%;border:0;background:#42a85f;color:#fff;font-size:55px;line-height:1;box-shadow:0 7px 0 #287d40;cursor:pointer}
+.play:active{transform:translateY(4px);box-shadow:0 3px 0 #287d40}
+.demoScene{position:relative;height:290px;margin:0 auto;overflow:hidden;border-radius:25px;background:linear-gradient(#e4f6ff 0 67%,#91d174 67%)}
+.dSnail{position:absolute;left:7%;bottom:32px;font-size:90px}.dBerry{position:absolute;right:8%;bottom:40px;font-size:78px}.dFinger{position:absolute;right:16%;bottom:120px;font-size:70px;opacity:0;transition:.3s}.dStop{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);font-size:95px;opacity:0}.dPath{position:absolute;left:29%;right:27%;bottom:83px;height:13px;border-radius:20px;background:#fff8a0;box-shadow:0 0 16px 8px #fff9b6;opacity:0}
+.demoScene.finger .dFinger{opacity:1}.demoScene.stop .dStop{opacity:1}.demoScene.path .dPath{opacity:1}.demoScene.eat .dSnail{animation:dgo .8s forwards}@keyframes dgo{to{transform:translateX(300px)}}.demoScene.eat .dBerry{opacity:0}
+.demoScene.birdDemo:after{content:"🐦";position:absolute;right:-90px;bottom:100px;font-size:80px;animation:dbird 1.3s forwards}@keyframes dbird{50%,70%{right:35px}100%{right:-100px}}
+#demoProgress{display:flex;justify-content:center;gap:9px;margin-top:18px}.p{width:13px;height:13px;border-radius:50%;background:#ddd}.p.on{background:#53a76a}
+.skip{margin-top:14px;border:0;background:#edf1ee;border-radius:14px;padding:10px 16px;font-size:20px;font-weight:800;cursor:pointer}
+h1{font-size:38px;margin:.15em 0}.adultGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;text-align:left}.card{background:#f1f5f2;border-radius:16px;padding:12px}.card b{display:block;font-size:13px;opacity:.65}.card span{font-size:27px;font-weight:900}
+table{width:100%;border-collapse:collapse;margin-top:15px;font-size:14px}td,th{padding:7px;border-bottom:1px solid #ddd;text-align:left}.close{border:0;background:#e8eeea;border-radius:13px;padding:10px 16px;font-weight:800;margin-top:15px;cursor:pointer}
+#finishIcon{font-size:clamp(100px,18vw,190px)}
+@media(max-width:600px){#snail{left:3vw}#berry{right:4vw}#path{left:30vw;right:24vw}.demoScene{height:250px}}
+</style>
+</head>
+<body>
+<div id="app">
+<div class="sun"></div><div class="cloud"></div><div class="ground"></div>
+<a id="home" href="../" aria-label="Volver a la página de inicio" title="Volver al inicio">🏠</a>
+<button id="adult" aria-label="Zona adulta">⚙️</button>
+<div id="game">
+ <div id="dots"></div>
+ <div id="snail">🐌</div><div id="path"></div><div id="berry">🍓</div>
+ <div id="hand">✋</div><div id="readyIcon">✨</div><div id="bird">🐦</div>
+</div>
+
+<div id="start" class="overlay"><div class="panel">
+ <div class="start-art">🐌　🍓</div>
+ <button id="play" class="play" aria-label="Comenzar">▶</button>
+</div></div>
+
+<div id="demo" class="overlay hidden"><div class="panel">
+ <div id="demoScene" class="demoScene">
+   <div class="dSnail">🐌</div><div class="dPath"></div><div class="dBerry">🍓</div>
+   <div class="dFinger">👆</div><div class="dStop">✋</div>
+ </div>
+ <div id="demoProgress"><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i></div>
+ <button id="skip" class="skip" aria-label="Saltar demostración">▶</button>
+</div></div>
+
+<div id="finish" class="overlay hidden"><div class="panel">
+ <div id="finishIcon">🐌🏡</div>
+ <button id="again" class="play" aria-label="Jugar otra vez">↻</button>
+</div></div>
+
+<div id="adultPanel" class="overlay hidden"><div class="panel">
+ <h1>Zona adulta</h1>
+ <p>Datos descriptivos de esta sesión. No constituyen una evaluación psicológica.</p>
+ <div class="adultGrid">
+  <div class="card"><b>Ensayos</b><span id="rTrials">0</span></div>
+  <div class="card"><b>Limpios</b><span id="rClean">0</span></div>
+  <div class="card"><b>Corregidos</b><span id="rCorrected">0</span></div>
+  <div class="card"><b>Múltiples / ráfaga</b><span id="rMulti">0</span></div>
+  <div class="card"><b>Omisiones</b><span id="rOmit">0</span></div>
+  <div class="card"><b>Anticipaciones</b><span id="rAnt">0</span></div>
+ </div>
+ <div id="resultsTable"></div>
+ <button id="closeAdult" class="close">Cerrar</button>
+</div></div>
+</div>
+<script>
+(()=>{
+const TOTAL=8, MINWAIT=800, MAXWAIT=1600, OMISSION=3000, FEEDBACK=800, MARGIN=250, BURST=280;
+const q=s=>document.querySelector(s), snail=q('#snail'),berry=q('#berry'),path=q('#path'),hand=q('#hand'),ready=q('#readyIcon'),bird=q('#bird');
+let running=false,state='idle',idx=0,results=[],ants=[],trialStart=0,signalDue=0,signalShown=0,feedback=false;
+let signalTimer,omitTimer,feedbackTimer;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms)), rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+function tone(kind){
+ try{const A=window.AudioContext||window.webkitAudioContext,c=tone.c||(tone.c=new A()),o=c.createOscillator(),g=c.createGain(),n=c.currentTime;o.connect(g);g.connect(c.destination);
+ if(kind==='wait'){o.frequency.setValueAtTime(250,n);o.frequency.linearRampToValueAtTime(205,n+.18)}
+ else if(kind==='now'){o.frequency.setValueAtTime(520,n);o.frequency.linearRampToValueAtTime(760,n+.2)}
+ else{o.frequency.setValueAtTime(650,n);o.frequency.setValueAtTime(820,n+.12)}
+ g.gain.setValueAtTime(.05,n);g.gain.exponentialRampToValueAtTime(.001,n+.3);o.start();o.stop(n+.31)}catch(e){}
+}
+function say(t){try{speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(t);u.lang='es-ES';u.rate=.82;u.pitch=1.05;u.volume=.9;speechSynthesis.speak(u)}catch(e){}}
+function clear(){clearTimeout(signalTimer);clearTimeout(omitTimer);clearTimeout(feedbackTimer)}
+function visual(){snail.className='';berry.className='';path.className='';hand.className='';ready.className='';bird.className='';feedback=false}
+function dots(){q('#dots').innerHTML=Array.from({length:TOTAL},(_,i)=>`<i class="dot ${i<idx?'done':''}"></i>`).join('')}
+async function tutorial(){
+ q('#start').classList.add('hidden');q('#demo').classList.remove('hidden');
+ const s=q('#demoScene'),ps=[...document.querySelectorAll('.p')];
+ function step(n,cls='',speech=''){ps.forEach((p,i)=>p.classList.toggle('on',i<=n));s.className='demoScene '+cls;if(speech){say(speech)}}
+ step(0); await sleep(1000);
+ step(1,'finger'); await sleep(850);
+ step(2,'finger stop','Espera');tone('wait'); await sleep(1200);
+ step(3,'path');tone('now'); await sleep(800);
+ step(4,'path eat');tone('good'); await sleep(1200);
+ // segunda mini-demostración: oportunidad perdida
+ s.innerHTML='<div class="dSnail">🐌</div><div class="dPath"></div><div class="dBerry">🍓</div><div class="dFinger">👆</div><div class="dStop">✋</div>';
+ s.className='demoScene path'; await sleep(1100);
+ s.className='demoScene path birdDemo'; await sleep(700);
+ const b=s.querySelector('.dBerry'); if(b) setTimeout(()=>b.style.opacity='0',350);
+ await sleep(1100);
+ startSession();
+}
+async function startSession(){
+ clear();results=[];idx=0;running=true;q('#start').classList.add('hidden');q('#demo').classList.add('hidden');q('#finish').classList.add('hidden');q('#adultPanel').classList.add('hidden');dots();await sleep(300);startTrial()
+}
+async function startTrial(){
+ clear();visual();dots();if(idx>=TOTAL){finish();return}state='between';berry.className='gone';await sleep(330);
+ ants=[];trialStart=performance.now();let w=rnd(MINWAIT,MAXWAIT);signalDue=trialStart+w;state='waiting';berry.className='wait';snail.className='wait';signalTimer=setTimeout(trySignal,w)
+}
+function trySignal(){if(!running||!['waiting','feedback'].includes(state))return;if(feedback){signalTimer=setTimeout(trySignal,MARGIN);return}showSignal()}
+function showSignal(){state='ready';signalShown=performance.now();path.className='show';ready.className='show';berry.className='ready';snail.className='';tone('now');omitTimer=setTimeout(omission,OMISSION)}
+function classify(){if(ants.length===0)return'limpio';if(ants.length===1)return'corregido';let burst=false;for(let i=1;i<ants.length;i++)if(ants[i]-ants[i-1]<=BURST)burst=true;return burst||ants.length>=4?'ráfaga':'anticipación múltiple'}
+function input(){
+ if(!running)return;let now=performance.now();
+ if(state==='waiting'||state==='feedback'){ants.push(now);if(!feedback){feedback=true;state='feedback';hand.className='show';snail.className='sad';tone('wait');say('Espera');feedbackTimer=setTimeout(()=>{hand.className='';feedback=false;if(state==='feedback')state='waiting';snail.className='wait';if(performance.now()>=signalDue)signalTimer=setTimeout(trySignal,MARGIN)},FEEDBACK)}return}
+ if(state==='ready'){clearTimeout(omitTimer);state='success';results.push({trial:idx+1,wait:Math.round(signalShown-trialStart),ants:ants.length,outcome:classify(),lat:Math.round(now-signalShown)});ready.className='';path.className='';berry.className='gone';snail.className='go';tone('good');setTimeout(next,1200)}
+}
+function omission(){if(state!=='ready')return;state='omission';ready.className='';path.className='';snail.className='sad';results.push({trial:idx+1,wait:Math.round(signalShown-trialStart),ants:ants.length,outcome:'omisión',lat:null});bird.className='steal';setTimeout(()=>berry.className='gone',720);setTimeout(next,1650)}
+function next(){idx++;dots();setTimeout(startTrial,400)}
+function finish(){running=false;state='idle';clear();visual();update();q('#finish').classList.remove('hidden')}
+function update(){
+ let clean=results.filter(r=>r.outcome==='limpio').length,corr=results.filter(r=>r.outcome==='corregido').length,multi=results.filter(r=>['anticipación múltiple','ráfaga'].includes(r.outcome)).length,omit=results.filter(r=>r.outcome==='omisión').length,ant=results.reduce((a,r)=>a+r.ants,0);
+ q('#rTrials').textContent=results.length;q('#rClean').textContent=clean;q('#rCorrected').textContent=corr;q('#rMulti').textContent=multi;q('#rOmit').textContent=omit;q('#rAnt').textContent=ant;
+ q('#resultsTable').innerHTML=results.length?`<table><thead><tr><th>#</th><th>Espera</th><th>Ant.</th><th>Resultado</th><th>Respuesta</th></tr></thead><tbody>${results.map(r=>`<tr><td>${r.trial}</td><td>${(r.wait/1000).toFixed(2)} s</td><td>${r.ants}</td><td>${r.outcome}</td><td>${r.lat==null?'—':(r.lat/1000).toFixed(2)+' s'}</td></tr>`).join('')}</tbody></table>`:'';
+}
+q('#play').onclick=tutorial;q('#skip').onclick=startSession;q('#again').onclick=startSession;
+q('#adult').onclick=()=>{update();q('#adultPanel').classList.remove('hidden')};q('#closeAdult').onclick=()=>q('#adultPanel').classList.add('hidden');
+q('#game').addEventListener('pointerdown',input);document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();input()}});
+dots();
+})();
+</script>
+</body>
+</html>
