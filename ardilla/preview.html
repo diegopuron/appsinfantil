@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>La cesta de la ardilla</title>
+<style>
+  :root{
+    --bg1:#dff3ff;
+    --bg2:#eef8df;
+    --card:#ffffff;
+    --ink:#263238;
+    --accent:#6d8f4e;
+    --accent2:#a9c981;
+    --shadow:0 8px 24px rgba(0,0,0,.12);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    color:var(--ink);
+    background:linear-gradient(var(--bg1) 0 64%, var(--bg2) 64% 100%);
+    overflow:hidden;
+  }
+  button{font:inherit;}
+  #app{min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:space-between; padding:14px 16px 20px;}
+  .topbar{width:min(1050px,100%); display:flex; justify-content:space-between; align-items:center; min-height:54px;}
+  .home-btn,.help-btn,.teacher-btn{
+    border:0; background:rgba(255,255,255,.92); box-shadow:var(--shadow); border-radius:18px; min-width:54px; min-height:54px; padding:8px 14px; cursor:pointer; font-size:26px;
+  }
+  .help-btn[disabled]{opacity:.4; cursor:default;}
+  .progress{display:flex; gap:8px; align-items:center; justify-content:center; flex:1;}
+  .dot{width:13px; height:13px; border-radius:50%; background:rgba(38,50,56,.18);}
+  .dot.done{background:rgba(38,50,56,.55);}
+
+  .scene{position:relative; width:min(1000px,100%); flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center;}
+  .character-zone{position:relative; width:100%; display:flex; justify-content:center; align-items:flex-end; min-height:205px;}
+  .squirrel{font-size:150px; line-height:1; filter:drop-shadow(0 5px 3px rgba(0,0,0,.15)); transform-origin:bottom center;}
+  .squirrel.happy{animation:bounce .6s ease 2;}
+  .squirrel.sad{animation:shake .55s ease 2;}
+  @keyframes bounce{50%{transform:translateY(-16px) scale(1.04)}}
+  @keyframes shake{20%,60%{transform:rotate(-7deg)}40%,80%{transform:rotate(7deg)}}
+
+  .thought{
+    position:absolute; left:50%; bottom:150px; transform:translateX(35px);
+    min-width:190px; min-height:110px; padding:20px 26px;
+    border-radius:55%; background:white; box-shadow:var(--shadow);
+    display:flex; align-items:center; justify-content:center; gap:14px;
+  }
+  .thought::before,.thought::after{content:""; position:absolute; background:white; border-radius:50%;}
+  .thought::before{width:28px;height:28px;left:12px;bottom:-23px;}
+  .thought::after{width:14px;height:14px;left:-2px;bottom:-38px;}
+  .hidden{display:none !important;}
+
+  .model-card{
+    min-height:140px; width:min(760px,94%); background:rgba(255,255,255,.9); border-radius:32px; box-shadow:var(--shadow);
+    display:flex; align-items:center; justify-content:center; gap:34px; padding:18px 30px; margin-top:8px;
+  }
+  .model-title{position:absolute; top:-9999px;}
+  .item{font-size:78px; line-height:1; user-select:none;}
+  .thought .item{font-size:58px;}
+
+  .choice-zone{width:min(860px,96%); display:grid; grid-template-columns:repeat(5,minmax(90px,1fr)); gap:16px; align-items:center; justify-items:center; min-height:170px; margin-top:14px;}
+  .choice{
+    width:118px; height:118px; border:0; border-radius:28px; background:rgba(255,255,255,.94); box-shadow:var(--shadow);
+    display:flex; align-items:center; justify-content:center; font-size:68px; cursor:pointer; transition:transform .15s ease, outline .15s ease, opacity .2s;
+  }
+  .choice:hover{transform:scale(1.04)}
+  .choice.selected{outline:6px solid rgba(109,143,78,.48); transform:scale(.94)}
+  .choice[disabled]{cursor:default; opacity:.88;}
+
+  .basket-zone{width:min(860px,96%); display:flex; justify-content:center; align-items:flex-end; min-height:150px; margin-top:4px;}
+  .basket{
+    position:relative; width:260px; min-height:105px; border-radius:18px 18px 55px 55px; background:#c98f4d; border:7px solid #875727; box-shadow:var(--shadow);
+    display:flex; gap:8px; align-items:center; justify-content:center; padding:22px 18px 12px;
+  }
+  .basket::before{content:""; position:absolute; width:185px; height:85px; border:10px solid #875727; border-bottom:0; border-radius:95px 95px 0 0; top:-65px; left:50%; transform:translateX(-50%);}
+  .basket .item{font-size:49px;}
+  .basket.emptying .item{animation:fall .7s ease forwards;}
+  @keyframes fall{to{transform:translateY(85px) rotate(25deg); opacity:0;}}
+
+  .start-overlay,.end-overlay,.teacher-panel{
+    position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(31,42,47,.22); backdrop-filter:blur(3px); z-index:20; padding:20px;
+  }
+  .panel{background:white; border-radius:34px; padding:28px; width:min(640px,96%); box-shadow:0 16px 45px rgba(0,0,0,.2); text-align:center;}
+  .panel h1{margin:0 0 10px; font-size:clamp(30px,5vw,48px)}
+  .panel p{font-size:20px; margin:8px 0 18px;}
+  .big-btn{border:0; background:var(--accent); color:white; font-weight:700; border-radius:24px; padding:16px 28px; font-size:24px; cursor:pointer; box-shadow:var(--shadow); margin:8px;}
+  .secondary{background:#eceff1; color:#263238;}
+  .demo-row{display:flex; justify-content:center; gap:12px; font-size:54px; margin:14px 0;}
+  .teacher-data{text-align:left; font-size:16px; background:#f7f8f8; padding:16px; border-radius:18px; max-height:45vh; overflow:auto; white-space:pre-wrap;}
+
+  .message-bubble{position:absolute; top:18px; left:50%; transform:translateX(-50%); background:white; border-radius:26px; box-shadow:var(--shadow); padding:12px 20px; font-size:28px; min-width:190px; text-align:center;}
+
+
+  .tutorial-arrow{
+    position:fixed; z-index:40; font-size:72px; line-height:1; filter:drop-shadow(0 5px 5px rgba(0,0,0,.25));
+    animation:tutorialTap .75s ease-in-out infinite alternate; pointer-events:none;
+  }
+  .tutorial-target{position:relative; z-index:39; outline:8px solid rgba(255,193,7,.72)!important; animation:tutorialGlow .75s ease-in-out infinite alternate;}
+  .tutorial-shield{position:fixed; inset:0; z-index:35; background:rgba(255,255,255,.08); pointer-events:none;}
+  @keyframes tutorialTap{from{transform:translateY(0) scale(1)}to{transform:translateY(-8px) scale(1.12)}}
+  @keyframes tutorialGlow{from{box-shadow:0 0 0 0 rgba(255,193,7,.3),var(--shadow)}to{box-shadow:0 0 0 15px rgba(255,193,7,0),var(--shadow)}}
+
+  @media (max-width:760px){
+    .squirrel{font-size:115px}.thought{bottom:118px; transform:translateX(10px); min-width:155px; padding:16px}.thought .item{font-size:46px}
+    .choice-zone{grid-template-columns:repeat(3,1fr); gap:12px; min-height:220px}
+    .choice{width:96px;height:96px;font-size:58px;border-radius:23px}.model-card{min-height:120px}.item{font-size:64px}.basket{width:220px}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <button class="home-btn" id="homeBtn" aria-label="Volver al índice">🏠</button>
+    <div class="progress" id="progress"></div>
+    <button class="help-btn" id="helpBtn" aria-label="Volver a mirar" title="Volver a mirar">👀</button>
+    <button class="teacher-btn" id="teacherBtn" aria-label="Zona docente">⚙️</button>
+  </div>
+
+  <main class="scene">
+    <div class="message-bubble hidden" id="messageBubble"></div>
+    <div class="character-zone">
+      <div class="squirrel" id="squirrel" aria-hidden="true">🐿️</div>
+      <div class="thought hidden" id="thought"></div>
+    </div>
+
+    <div class="model-card hidden" id="modelCard" aria-live="polite"><span class="model-title">Mira y recuerda</span></div>
+    <div class="choice-zone hidden" id="choiceZone"></div>
+    <div class="basket-zone">
+      <div class="basket" id="basket" aria-label="Cesta"></div>
+    </div>
+  </main>
+</div>
+<div class="tutorial-shield hidden" id="tutorialShield"></div>
+<div class="tutorial-arrow hidden" id="tutorialArrow" aria-hidden="true">👆</div>
+
+<div class="start-overlay" id="startOverlay">
+  <div class="panel">
+    <h1>🐿️ La cesta de la ardilla</h1>
+    <div class="demo-row">🐿️ 💭 🧺</div>
+    <p>Primero jugamos juntos.</p>
+    <button class="big-btn" id="startBtn">▶️ Empezar</button>
+  </div>
+</div>
+
+<div class="end-overlay hidden" id="endOverlay">
+  <div class="panel">
+    <h1>🌟 ¡Terminado!</h1>
+    <p>La ardilla ya tiene su cesta preparada.</p>
+    <button class="big-btn" id="againBtn">🔁 Otra partida</button>
+    <button class="big-btn secondary" id="endTeacherBtn">⚙️ Ver sesión</button>
+  </div>
+</div>
+
+<div class="teacher-panel hidden" id="teacherPanel">
+  <div class="panel">
+    <h1>Zona docente</h1>
+    <div class="teacher-data" id="teacherData"></div>
+    <button class="big-btn secondary" id="closeTeacherBtn">Cerrar</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const INDEX_URL = '../index.html';
+  const MODEL_MS = 4000;
+  const TRANSITION_MS = 400;
+  const HELP_MS = 3000;
+  const POSITIVE_MS = 1500;
+  const NEGATIVE_MS = 2000;
+  const MAX_TRIALS = 12;
+
+  const ITEMS = ['🍎','🧸','🚗','🐟','⚽','☂️','👟','🦋','🥕','🎈','🚲','🪥','🧢','🍌','🐸','⭐'];
+
+  const route = [
+    {code:'M1-D1', m:1, d:1, trials:2},
+    {code:'M1-D2', m:1, d:2, trials:3},
+    {code:'M2-D1', m:2, d:1, trials:3},
+    {code:'M2-D2', m:2, d:2, trials:3},
+    {code:'M3-D1', m:3, d:1, trials:3},
+    {code:'M2-D3', m:2, d:3, trials:3},
+    {code:'M3-D2', m:3, d:2, trials:3},
+    {code:'M4-D1', m:4, d:1, trials:3}
+  ];
+
+  const state = {
+    routeIndex:0,
+    inCell:0,
+    totalTrials:0,
+    phase:'idle',
+    target:[],
+    alternatives:[],
+    selected:[],
+    helpUsed:false,
+    attempt:1,
+    cellResults:[],
+    session:[]
+  };
+
+  const $ = s => document.querySelector(s);
+  const modelCard=$('#modelCard'), choiceZone=$('#choiceZone'), basket=$('#basket'), thought=$('#thought');
+  const squirrel=$('#squirrel'), helpBtn=$('#helpBtn'), progress=$('#progress'), messageBubble=$('#messageBubble');
+  const tutorialArrow=$('#tutorialArrow'), tutorialShield=$('#tutorialShield');
+
+  const sleep = ms => new Promise(r=>setTimeout(r,ms));
+  const shuffle = arr => [...arr].sort(()=>Math.random()-.5);
+  const sample = (arr,n) => shuffle(arr).slice(0,n);
+
+  function renderProgress(){
+    progress.innerHTML='';
+    for(let i=0;i<Math.min(MAX_TRIALS,12);i++){
+      const d=document.createElement('span'); d.className='dot'+(i<state.totalTrials?' done':''); progress.appendChild(d);
+    }
+  }
+
+  function setMessage(txt, ms=0){
+    if(!txt){messageBubble.classList.add('hidden'); return;}
+    messageBubble.textContent=txt; messageBubble.classList.remove('hidden');
+    if(ms) setTimeout(()=>messageBubble.classList.add('hidden'),ms);
+  }
+
+  function renderItems(container, items, cls='item'){
+    container.innerHTML='';
+    items.forEach(x=>{const s=document.createElement('span'); s.className=cls; s.textContent=x; container.appendChild(s);});
+  }
+
+  function renderChoices(){
+    choiceZone.innerHTML='';
+    state.alternatives.forEach(item=>{
+      const b=document.createElement('button');
+      b.className='choice'; b.textContent=item; b.dataset.item=item; b.setAttribute('aria-label','Objeto');
+      b.addEventListener('click',()=>selectItem(item,b));
+      choiceZone.appendChild(b);
+    });
+  }
+
+  function lockChoices(lock=true){
+    choiceZone.querySelectorAll('button').forEach(b=>b.disabled=lock);
+  }
+
+  function updateBasket(){ renderItems(basket,state.selected); }
+
+  function clearAnimations(){ squirrel.classList.remove('happy','sad'); basket.classList.remove('emptying'); }
+
+  function clearTutorialCue(){
+    document.querySelectorAll('.tutorial-target').forEach(el=>el.classList.remove('tutorial-target'));
+    tutorialArrow.classList.add('hidden'); tutorialShield.classList.add('hidden');
+  }
+
+  function highlightForLooking(el){
+    clearTutorialCue();
+    tutorialShield.classList.remove('hidden');
+    el.classList.add('tutorial-target');
+  }
+
+  function pointAt(el){
+    clearTutorialCue();
+    tutorialShield.classList.remove('hidden');
+    el.classList.add('tutorial-target');
+    const r=el.getBoundingClientRect();
+    tutorialArrow.textContent='👆';
+    tutorialArrow.classList.remove('hidden');
+    const aw=72, ah=72;
+    let left=r.left+r.width/2-aw/2;
+    let top=r.bottom+6;
+    if(top+ah>window.innerHeight-8) top=r.top-ah-6;
+    left=Math.max(8,Math.min(window.innerWidth-aw-8,left));
+    top=Math.max(8,Math.min(window.innerHeight-ah-8,top));
+    tutorialArrow.style.left=left+'px'; tutorialArrow.style.top=top+'px';
+  }
+
+  function waitForClick(el){
+    return new Promise(resolve=>{
+      const h=e=>{e.preventDefault(); e.stopPropagation(); el.removeEventListener('click',h,true); resolve();};
+      el.addEventListener('click',h,true);
+    });
+  }
+
+  async function demo(){
+    $('#startOverlay').classList.add('hidden');
+    state.phase='tutorial'; state.selected=[]; updateBasket();
+    helpBtn.disabled=true;
+
+    // 1. Mirar el modelo: una flecha dirige la atención, sin exigir lectura.
+    state.target=['🍎','🧸'];
+    renderItems(modelCard,state.target); modelCard.classList.remove('hidden');
+    highlightForLooking(modelCard);
+    await sleep(2500);
+    clearTutorialCue(); modelCard.classList.add('hidden'); await sleep(TRANSITION_MS);
+
+    // 2. Primera selección guiada: el niño debe tocar el objeto señalado.
+    state.alternatives=['🚗','🍎','🧸']; renderChoices(); choiceZone.classList.remove('hidden'); lockChoices(true);
+    for(const item of state.target){
+      const btn=[...choiceZone.children].find(b=>b.dataset.item===item);
+      btn.disabled=false; pointAt(btn);
+      await waitForClick(btn);
+      clearTutorialCue(); btn.classList.add('selected'); btn.disabled=true;
+      state.selected.push(item); updateBasket(); await sleep(450);
+    }
+    squirrel.classList.add('happy'); setMessage('😊'); await sleep(900);
+    squirrel.classList.remove('happy'); setMessage('');
+
+    // 3. Enseñar activamente el botón de recordar.
+    choiceZone.classList.add('hidden'); state.selected=[]; updateBasket();
+    state.target=['⚽','☂️']; state.alternatives=['🦋','⚽','☂️'];
+    renderItems(modelCard,state.target); modelCard.classList.remove('hidden'); await sleep(2200);
+    modelCard.classList.add('hidden'); await sleep(TRANSITION_MS);
+    renderChoices(); choiceZone.classList.remove('hidden'); lockChoices(true);
+    helpBtn.disabled=false; pointAt(helpBtn);
+    await waitForClick(helpBtn); clearTutorialCue(); helpBtn.disabled=true;
+    choiceZone.classList.add('hidden'); renderItems(thought,state.target); thought.classList.remove('hidden');
+    highlightForLooking(thought); await sleep(HELP_MS); clearTutorialCue(); thought.classList.add('hidden');
+    await sleep(TRANSITION_MS); choiceZone.classList.remove('hidden');
+
+    // 4. Tras usar la ayuda, vuelve a seleccionar guiado.
+    for(const item of state.target){
+      const btn=[...choiceZone.children].find(b=>b.dataset.item===item);
+      btn.disabled=false; pointAt(btn);
+      await waitForClick(btn); clearTutorialCue(); btn.classList.add('selected'); btn.disabled=true;
+      state.selected.push(item); updateBasket(); await sleep(450);
+    }
+    squirrel.classList.add('happy'); setMessage('⭐'); await sleep(900);
+    squirrel.classList.remove('happy'); setMessage('');
+    clearTutorialCue(); choiceZone.classList.add('hidden'); state.selected=[]; updateBasket(); helpBtn.disabled=true;
+    startSession();
+  }
+
+  function startSession(){
+    Object.assign(state,{routeIndex:0,inCell:0,totalTrials:0,phase:'idle',target:[],alternatives:[],selected:[],helpUsed:false,attempt:1,cellResults:[],session:[]});
+    renderProgress(); nextTrial();
+  }
+
+  function currentCell(){return route[state.routeIndex];}
+
+  async function nextTrial(){
+    clearAnimations(); setMessage('');
+    if(state.totalTrials>=MAX_TRIALS || state.routeIndex>=route.length){return finishSession();}
+    const cell=currentCell();
+    state.phase='model'; state.selected=[]; state.helpUsed=false; state.attempt=1;
+    helpBtn.disabled=true; choiceZone.classList.add('hidden'); updateBasket();
+    const all=sample(ITEMS,cell.m+cell.d);
+    state.target=all.slice(0,cell.m);
+    state.alternatives=shuffle(all);
+    renderItems(modelCard,state.target);
+    modelCard.classList.remove('hidden');
+    await sleep(MODEL_MS);
+    modelCard.classList.add('hidden');
+    await sleep(TRANSITION_MS);
+    renderChoices(); choiceZone.classList.remove('hidden');
+    state.phase='choice'; helpBtn.disabled=false;
+  }
+
+  async function selectItem(item, btn){
+    if(state.phase!=='choice') return;
+    if(state.selected.includes(item)) return;
+    state.selected.push(item); btn.classList.add('selected'); updateBasket();
+    if(state.selected.length===state.target.length){
+      lockChoices(true); helpBtn.disabled=true; state.phase='evaluate'; await sleep(250); evaluateSelection();
+    }
+  }
+
+  function isCorrect(){
+    return state.selected.length===state.target.length && state.selected.every(x=>state.target.includes(x));
+  }
+
+  async function evaluateSelection(){
+    if(isCorrect()){
+      squirrel.classList.add('happy'); setMessage('😊');
+      await sleep(POSITIVE_MS);
+      squirrel.classList.remove('happy'); setMessage('');
+      recordTrial(state.helpUsed ? 'H' : 'A');
+    } else {
+      squirrel.classList.add('sad'); setMessage('😕');
+      basket.classList.add('emptying');
+      await sleep(900);
+      state.selected=[]; updateBasket(); basket.classList.remove('emptying');
+      await sleep(Math.max(0,NEGATIVE_MS-900));
+      squirrel.classList.remove('sad'); setMessage('');
+      if(state.attempt===1){
+        state.attempt=2; state.phase='choice';
+        choiceZone.querySelectorAll('button').forEach(b=>{b.classList.remove('selected'); b.disabled=false;});
+        helpBtn.disabled=state.helpUsed;
+      }else{
+        recordTrial('E');
+      }
+    }
+  }
+
+  async function useHelp(){
+    if(state.phase!=='choice' || state.helpUsed) return;
+    state.helpUsed=true; helpBtn.disabled=true; state.phase='help'; lockChoices(true);
+    choiceZone.classList.add('hidden');
+    renderItems(thought,state.target); thought.classList.remove('hidden');
+    setMessage('💭');
+    await sleep(HELP_MS);
+    thought.classList.add('hidden'); setMessage('');
+    await sleep(TRANSITION_MS);
+    choiceZone.classList.remove('hidden'); lockChoices(false); state.phase='choice';
+  }
+
+  function recordTrial(result){
+    const cell=currentCell();
+    state.session.push({
+      n:state.totalTrials+1, condition:cell.code, m:cell.m, d:cell.d, result,
+      help:state.helpUsed, attempts:state.attempt
+    });
+    state.cellResults.push(result);
+    state.totalTrials++; state.inCell++; renderProgress();
+    choiceZone.classList.add('hidden'); state.selected=[]; updateBasket();
+    if(state.inCell>=cell.trials){ adapt(); }
+    setTimeout(nextTrial,500);
+  }
+
+  function adapt(){
+    const r=[...state.cellResults];
+    const A=r.filter(x=>x==='A').length, H=r.filter(x=>x==='H').length, E=r.filter(x=>x==='E').length;
+    let advance=false;
+    if(A===3 || (A===2 && H===1) || (r.length===2 && A===2)) advance=true;
+    else if(E>=2) advance=false;
+    else if(H===r.length) advance=false;
+    else advance=true; // prototype: gentle exploration of next cell
+
+    if(advance && state.routeIndex<route.length-1) state.routeIndex++;
+    // If not advancing, repeat the same cell once; after that, move one step easier.
+    else if(!advance){
+      const repeats=state.session.filter(x=>x.condition===currentCell().code).length;
+      if(repeats>=currentCell().trials*2 && state.routeIndex>0) state.routeIndex--;
+    }
+    state.inCell=0; state.cellResults=[];
+  }
+
+  function finishSession(){
+    state.phase='finished'; helpBtn.disabled=true; choiceZone.classList.add('hidden'); modelCard.classList.add('hidden'); thought.classList.add('hidden');
+    $('#endOverlay').classList.remove('hidden'); updateTeacherPanel();
+  }
+
+  function updateTeacherPanel(){
+    if(!state.session.length){$('#teacherData').textContent='Todavía no hay retos registrados.'; return;}
+    const autonomous=state.session.filter(x=>x.result==='A').length;
+    const helped=state.session.filter(x=>x.result==='H').length;
+    const unresolved=state.session.filter(x=>x.result==='E').length;
+    const byM={};
+    state.session.forEach(x=>{
+      byM[x.m] ||= {total:0,aut:0,help:0,err:0};
+      byM[x.m].total++;
+      if(x.result==='A') byM[x.m].aut++; else if(x.result==='H') byM[x.m].help++; else byM[x.m].err++;
+    });
+    let stable=0;
+    Object.entries(byM).forEach(([m,v])=>{ if(v.total>=2 && v.aut/v.total>=.66) stable=Math.max(stable,Number(m)); });
+    const maxM=Math.max(...state.session.map(x=>x.m));
+    const summary=[];
+    summary.push(`RETOS REALIZADOS: ${state.session.length}`);
+    summary.push(`Resueltos sin ayuda: ${autonomous}`);
+    summary.push(`Resueltos después de volver a mirar: ${helped}`);
+    summary.push(`No resueltos: ${unresolved}`);
+    summary.push('');
+    if(stable) summary.push(`ZONA DE TRABAJO OBSERVADA: recuerda de forma autónoma y bastante estable ${stable} objeto${stable===1?'':'s'} en esta sesión.`);
+    else summary.push('ZONA DE TRABAJO OBSERVADA: todavía no hay suficientes respuestas autónomas para describir una zona estable.');
+    if(maxM>stable) summary.push(`También se exploraron retos de hasta ${maxM} objetos, con mayor necesidad de ayuda o más errores.`);
+    summary.push('');
+    summary.push('DETALLE DE LOS RETOS');
+    state.session.forEach(x=>{
+      const label=x.result==='A'?'resuelto sin ayuda':x.result==='H'?'resuelto tras volver a mirar':'no resuelto';
+      summary.push(`${x.n}. Recordar ${x.m} objeto${x.m===1?'':'s'} entre ${x.m+x.d} opciones: ${label}.`);
+    });
+    summary.push('');
+    summary.push('Estos datos describen únicamente el comportamiento observado durante esta partida y no constituyen una evaluación diagnóstica.');
+    $('#teacherData').textContent=summary.join('\n');
+  }
+
+  $('#startBtn').addEventListener('click',demo);
+  $('#againBtn').addEventListener('click',()=>{$('#endOverlay').classList.add('hidden');startSession();});
+  helpBtn.addEventListener('click',useHelp);
+  $('#teacherBtn').addEventListener('click',()=>{updateTeacherPanel();$('#teacherPanel').classList.remove('hidden');});
+  $('#endTeacherBtn').addEventListener('click',()=>{updateTeacherPanel();$('#teacherPanel').classList.remove('hidden');});
+  $('#closeTeacherBtn').addEventListener('click',()=>$('#teacherPanel').classList.add('hidden'));
+  $('#homeBtn').addEventListener('click',()=>{window.location.href=INDEX_URL;});
+})();
+</script>
+</body>
+</html>
