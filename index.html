@@ -1,254 +1,74 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#F7C948" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#F7C948">
   <title>Juegos para pensar</title>
-
   <style>
-    :root{
-      --fondo:#FFF8E8;
-      --texto:#25324A;
-      --amarillo:#F7C948;
-      --verde:#73C98C;
-      --azul:#7BC7E8;
-      --blanco:#FFFFFF;
-      --sombra:0 10px 24px rgba(37,50,74,.12);
-      --borde:4px solid rgba(37,50,74,.10);
-    }
-
-    *{
-      box-sizing:border-box;
-    }
-
-    body{
-      margin:0;
-      min-height:100vh;
-      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      background:
-        radial-gradient(circle at 15% 20%, rgba(247,201,72,.20) 0 90px, transparent 92px),
-        radial-gradient(circle at 85% 15%, rgba(123,199,232,.18) 0 110px, transparent 112px),
-        radial-gradient(circle at 80% 85%, rgba(115,201,140,.16) 0 120px, transparent 122px),
-        var(--fondo);
-      color:var(--texto);
-    }
-
-    .wrap{
-      width:min(1100px,92vw);
-      margin:0 auto;
-      padding:40px 0 50px;
-    }
-
-    header{
-      text-align:center;
-      margin-bottom:34px;
-    }
-
-    .logo{
-      width:92px;
-      height:92px;
-      margin:0 auto 16px;
-      border-radius:28px;
-      display:grid;
-      place-items:center;
-      font-size:50px;
-      background:var(--amarillo);
-      box-shadow:var(--sombra);
-      transform:rotate(-3deg);
-    }
-
-    h1{
-      margin:0;
-      font-size:clamp(2rem,5vw,4rem);
-      line-height:1;
-      letter-spacing:-.04em;
-    }
-
-    .sub{
-      margin:14px auto 0;
-      max-width:650px;
-      font-size:clamp(1rem,2.5vw,1.25rem);
-      color:#5A667A;
-    }
-
-    .games{
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:26px;
-      margin-top:34px;
-    }
-
-    .game{
-      position:relative;
-      min-height:330px;
-      padding:28px;
-      border-radius:34px;
-      text-decoration:none;
-      color:var(--texto);
-      box-shadow:var(--sombra);
-      border:var(--borde);
-      transition:transform .18s ease, box-shadow .18s ease;
-      overflow:hidden;
-      outline:none;
-    }
-
-    .game:hover,
-    .game:focus-visible{
-      transform:translateY(-6px) scale(1.01);
-      box-shadow:0 16px 34px rgba(37,50,74,.16);
-    }
-
-    .game:active{
-      transform:scale(.98);
-    }
-
-    .frog{
-      background:linear-gradient(160deg,#DDF5E4 0%,#B9E6C7 100%);
-    }
-
-    .snail{
-      background:linear-gradient(160deg,#E8F6FC 0%,#CBEAF7 100%);
-    }
-
-    .animal{
-      height:170px;
-      display:grid;
-      place-items:center;
-      font-size:clamp(7rem,15vw,10rem);
-      filter:drop-shadow(0 8px 4px rgba(0,0,0,.08));
-      user-select:none;
-    }
-
-    .game h2{
-      margin:6px 0 8px;
-      text-align:center;
-      font-size:clamp(1.5rem,3vw,2.2rem);
-      line-height:1.05;
-    }
-
-    .game p{
-      margin:0;
-      text-align:center;
-      font-size:1.05rem;
-      color:#526078;
-    }
-
-    .play{
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:9px;
-      width:max-content;
-      margin:20px auto 0;
-      padding:12px 18px;
-      border-radius:999px;
-      background:var(--blanco);
-      font-weight:800;
-      box-shadow:0 5px 14px rgba(37,50,74,.10);
-    }
-
-    .play span{
-      font-size:1.25rem;
-    }
-
-    .bubble{
-      position:absolute;
-      border-radius:50%;
-      background:rgba(255,255,255,.35);
-      pointer-events:none;
-    }
-
-    .bubble.one{
-      width:74px;
-      height:74px;
-      right:-18px;
-      top:24px;
-    }
-
-    .bubble.two{
-      width:40px;
-      height:40px;
-      left:18px;
-      bottom:24px;
-    }
-
-    footer{
-      text-align:center;
-      margin-top:34px;
-      color:#748095;
-      font-size:.95rem;
-    }
-
-    @media (max-width:720px){
-      .wrap{
-        padding-top:26px;
-      }
-
-      .games{
-        grid-template-columns:1fr;
-      }
-
-      .game{
-        min-height:290px;
-      }
-
-      .animal{
-        height:145px;
-      }
-    }
-
-    @media (prefers-reduced-motion: reduce){
-      .game{
-        transition:none;
-      }
-    }
+    :root{--fondo:#FFF8E8;--texto:#25324A;--amarillo:#F7C948;--blanco:#fff;--sombra:0 10px 24px rgba(37,50,74,.12);--borde:4px solid rgba(37,50,74,.10)}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at 15% 20%,rgba(247,201,72,.20) 0 90px,transparent 92px),radial-gradient(circle at 85% 15%,rgba(123,199,232,.18) 0 110px,transparent 112px),radial-gradient(circle at 80% 85%,rgba(115,201,140,.16) 0 120px,transparent 122px),var(--fondo);color:var(--texto)}
+    .wrap{width:min(1100px,92vw);margin:0 auto;padding:40px 0 50px}
+    header{text-align:center;margin-bottom:34px}
+    .logo{width:92px;height:92px;margin:0 auto 16px;border-radius:28px;display:grid;place-items:center;font-size:50px;background:var(--amarillo);box-shadow:var(--sombra);transform:rotate(-3deg)}
+    h1{margin:0;font-size:clamp(2rem,5vw,4rem);line-height:1;letter-spacing:-.04em}
+    .sub{margin:14px auto 0;max-width:650px;font-size:clamp(1rem,2.5vw,1.25rem);color:#5A667A}
+    .games{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:26px;margin-top:34px}
+    .game{position:relative;min-height:330px;padding:28px;border-radius:34px;text-decoration:none;color:var(--texto);box-shadow:var(--sombra);border:var(--borde);transition:transform .18s ease,box-shadow .18s ease;overflow:hidden;outline:none}
+    .game:hover,.game:focus-visible{transform:translateY(-6px) scale(1.01);box-shadow:0 16px 34px rgba(37,50,74,.16)}
+    .game:active{transform:scale(.98)}
+    .frog{background:linear-gradient(160deg,#DDF5E4 0%,#B9E6C7 100%)}
+    .snail{background:linear-gradient(160deg,#E8F6FC 0%,#CBEAF7 100%)}
+    .squirrel{background:linear-gradient(160deg,#FFF0D7 0%,#F7D7A8 100%)}
+    .animal{height:170px;display:grid;place-items:center;font-size:clamp(7rem,15vw,10rem);filter:drop-shadow(0 8px 4px rgba(0,0,0,.08));user-select:none}
+    .game h2{margin:6px 0 8px;text-align:center;font-size:clamp(1.5rem,3vw,2.2rem);line-height:1.05}
+    .game p{margin:0;text-align:center;font-size:1.05rem;color:#526078}
+    .play{display:flex;align-items:center;justify-content:center;gap:9px;width:max-content;margin:20px auto 0;padding:12px 18px;border-radius:999px;background:var(--blanco);font-weight:800;box-shadow:0 5px 14px rgba(37,50,74,.10)}
+    .play span{font-size:1.25rem}
+    .bubble{position:absolute;border-radius:50%;background:rgba(255,255,255,.35);pointer-events:none}
+    .bubble.one{width:74px;height:74px;right:-18px;top:24px}
+    .bubble.two{width:40px;height:40px;left:18px;bottom:24px}
+    footer{text-align:center;margin-top:34px;color:#748095;font-size:.95rem}
+    @media(max-width:720px){.wrap{padding-top:26px}.games{grid-template-columns:1fr}.game{min-height:290px}.animal{height:145px}}
+    @media(prefers-reduced-motion:reduce){.game{transition:none}}
   </style>
 </head>
-
 <body>
-  <main class="wrap">
-    <header>
-      <div class="logo" aria-hidden="true">🧠</div>
-      <h1>Juegos para pensar</h1>
-      <p class="sub">Elige un juego y empieza a jugar.</p>
-    </header>
+<main class="wrap">
+  <header>
+    <div class="logo" aria-hidden="true">🧠</div>
+    <h1>Juegos para pensar</h1>
+    <p class="sub">Elige un juego y empieza a jugar.</p>
+  </header>
 
-    <section class="games" aria-label="Juegos disponibles">
+  <section class="games" aria-label="Juegos disponibles">
+    <a class="game frog" href="./rana/" aria-label="Abrir el juego de la rana">
+      <span class="bubble one"></span><span class="bubble two"></span>
+      <div class="animal" aria-hidden="true">🐸</div>
+      <h2>La rana</h2>
+      <p>Atención y control inhibitorio</p>
+      <div class="play"><span aria-hidden="true">▶</span>Jugar</div>
+    </a>
 
-      <a class="game frog" href="./rana/" aria-label="Abrir el juego de la rana">
-        <span class="bubble one"></span>
-        <span class="bubble two"></span>
+    <a class="game snail" href="./caracol/" aria-label="Abrir el juego del caracol">
+      <span class="bubble one"></span><span class="bubble two"></span>
+      <div class="animal" aria-hidden="true">🐌</div>
+      <h2>El caracol</h2>
+      <p>Atención, espera y respuesta</p>
+      <div class="play"><span aria-hidden="true">▶</span>Jugar</div>
+    </a>
 
-        <div class="animal" aria-hidden="true">🐸</div>
-        <h2>La rana</h2>
-        <p>Atención y control inhibitorio</p>
+    <a class="game squirrel" href="./ardilla/" aria-label="Abrir el juego de la ardilla">
+      <span class="bubble one"></span><span class="bubble two"></span>
+      <div class="animal" aria-hidden="true">🐿️</div>
+      <h2>La ardilla</h2>
+      <p>Memoria de trabajo visual</p>
+      <div class="play"><span aria-hidden="true">▶</span>Jugar</div>
+    </a>
+  </section>
 
-        <div class="play">
-          <span aria-hidden="true">▶</span>
-          Jugar
-        </div>
-      </a>
-
-      <a class="game snail" href="./caracol/" aria-label="Abrir el juego del caracol">
-        <span class="bubble one"></span>
-        <span class="bubble two"></span>
-
-        <div class="animal" aria-hidden="true">🐌</div>
-        <h2>El caracol</h2>
-        <p>Atención, espera y respuesta</p>
-
-        <div class="play">
-          <span aria-hidden="true">▶</span>
-          Jugar
-        </div>
-      </a>
-
-    </section>
-
-    <footer>
-      Pensado para Educación Infantil · 3 a 5 años
-    </footer>
-  </main>
+  <footer>Pensado para Educación Infantil · 3 a 5 años</footer>
+</main>
 </body>
 </html>
