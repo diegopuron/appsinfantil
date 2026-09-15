@@ -1,11 +1,202 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>La Máquina Loca · Prototipos A/B/C</title>
-<style>body{font-family:Arial,sans-serif;background:#f5f1e8;margin:0;padding:40px;text-align:center}h1{font-size:42px}p{max-width:720px;margin:15px auto 35px;font-size:20px}
-.grid{display:flex;gap:25px;justify-content:center;flex-wrap:wrap}.card{background:white;border:4px solid #333;border-radius:24px;padding:25px;width:280px}
-a{display:block;background:#333;color:white;text-decoration:none;border-radius:16px;padding:16px;font-size:22px;font-weight:bold}</style></head>
-<body><h1>⚙️ La Máquina Loca</h1><p>Tres microprototipos. La mecánica es idéntica; solo cambia cómo se representan los destinos.</p>
-<div class="grid">
-<div class="card"><h2>A</h2><p>Cajas con tarjeta modelo.</p><a href="prototipo_A.html">Abrir A</a></div>
-<div class="card"><h2>B</h2><p>El receptor es el modelo.</p><a href="prototipo_B.html">Abrir B</a></div>
-<div class="card"><h2>C</h2><p>El modelo está integrado en la entrada.</p><a href="prototipo_C.html">Abrir C</a></div>
-</div></body></html>
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>La Máquina Loca · V0.1</title>
+<style>
+:root{--bg:#f5f1e8;--ink:#28323c;--red:#e53b2f;--blue:#2670d8;--wood:#d6a45e;--wood2:#8c6239;--ok:#3da35a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);font-family:system-ui,Arial,sans-serif;color:var(--ink);overflow:hidden}
+button{font:inherit}
+#app{height:100dvh;display:grid;grid-template-rows:auto 1fr auto}
+.top{min-height:138px;display:flex;align-items:center;justify-content:center;position:relative;padding:10px}
+.home{position:absolute;left:14px;top:14px;width:54px;height:54px;border:0;border-radius:50%;background:white;font-size:28px;box-shadow:0 2px 8px #0002;cursor:pointer}
+.rule-card{width:150px;height:112px;background:#fff;border:5px solid #222;border-radius:18px;display:grid;place-items:center;overflow:hidden;box-shadow:0 4px 12px #0001}
+.rule-picto{width:100%;height:100%;display:grid;place-items:center}
+.rule-picto svg{width:92%;height:92%}
+.rule-picto[hidden]{display:none}
+.stage{position:relative;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;min-height:0}
+.object-wrap{position:absolute;left:50%;bottom:min(33vh,270px);transform:translateX(-50%);display:grid;place-items:center;width:180px;height:180px;z-index:3}
+.object{width:150px;height:150px;display:grid;place-items:center;font-size:126px;line-height:1;font-weight:900;filter:drop-shadow(0 5px 2px #0002);user-select:none}
+.red{color:var(--red)} .blue{color:var(--blue)}
+.destinations{display:flex;align-items:end;justify-content:center;width:100%;padding:0 4vw 4vh;gap:clamp(70px,18vw,240px)}
+.dest{border:0;background:transparent;width:min(34vw,300px);height:min(31vh,250px);cursor:pointer;position:relative;padding:0}
+.box{height:78%;margin-top:22%;border:7px solid var(--wood2);border-radius:18px 18px 28px 28px;background:linear-gradient(#e7bb79,var(--wood));box-shadow:0 8px 0 #76502e;position:relative}
+.slot{position:absolute;left:12%;right:12%;top:-13px;height:30px;border-radius:50%;background:#292929}
+.model{position:absolute;width:112px;height:112px;left:50%;top:-92px;transform:translateX(-50%);background:#fff;border:5px solid #222;border-radius:18px;display:grid;place-items:center;font-size:88px;font-weight:900;line-height:1}
+.dest:active .box{transform:translateY(3px)}
+.feedback{position:absolute;inset:0;pointer-events:none;display:grid;place-items:center;font-size:68px}
+.footer{height:34px;text-align:center;font-size:11px;color:#6a6a6a;padding:6px}
+.overlay{position:fixed;inset:0;background:rgba(245,241,232,.97);display:none;place-items:center;z-index:10;text-align:center}
+.overlay.show{display:grid}.gear{font-size:110px;animation:spin .8s linear infinite}.change-shapes{font-size:90px;font-weight:900;margin-top:10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{50%{transform:scale(1.18)}}
+@keyframes neutralError{
+  0%{transform:translateX(0) scale(1)}
+  18%{transform:translateX(-8px) scale(.96)}
+  36%{transform:translateX(8px) scale(.96)}
+  54%{transform:translateX(-6px) scale(.98)}
+  72%{transform:translateX(6px) scale(.98)}
+  100%{transform:translateX(0) scale(1)}
+}
+.error-shake{animation:neutralError .48s ease-in-out}
+.pulse{animation:pulse .55s ease-in-out 2}.pulse-model{animation:pulse .55s ease-in-out 2}
+.intro,.end{position:fixed;inset:0;background:var(--bg);z-index:20;display:grid;place-items:center;padding:28px;text-align:center}
+.intro h1,.end h1{font-size:clamp(34px,7vw,64px);margin:0 0 12px}.intro p{font-size:20px;max-width:620px}
+.start{border:0;border-radius:24px;background:#303a44;color:#fff;padding:18px 38px;font-size:28px;font-weight:800;cursor:pointer}
+.end{display:none;overflow:auto}.panel{max-width:720px;background:white;border-radius:26px;padding:26px;box-shadow:0 6px 24px #0002}
+.summary{font-size:20px;line-height:1.6;text-align:left}.sequence{font-size:30px;letter-spacing:5px;margin:12px 0}
+.actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:20px}.secondary{border:2px solid #333;background:white;border-radius:16px;padding:12px 18px;font-weight:700;cursor:pointer}
+.help-label{font-size:15px;color:#555;margin-top:12px}
+.tutorial-hand{position:absolute;font-size:70px;z-index:4;animation:pulse .65s ease-in-out infinite;pointer-events:none}
+@media(max-width:600px){.top{min-height:112px}.rule-card{width:125px;height:92px}.object-wrap{bottom:min(31vh,235px)}.object{width:120px;height:120px;font-size:100px}.model{width:88px;height:88px;top:-72px;font-size:68px}.dest{width:37vw}.destinations{gap:12vw;padding-left:1vw;padding-right:1vw}.box{border-width:5px}}
+</style>
+</head>
+<body>
+<div id="app">
+ <header class="top">
+  <button class="home" title="Volver al índice" onclick="location.href='../index.html'">⌂</button>
+  <div class="rule-card" id="ruleCard" aria-label="Regla activa">
+    <div id="pictoColor" class="rule-picto" aria-label="Color">
+      <!-- Señal visual basada en los pictogramas de colores de ARASAAC: manchas de color -->
+      <svg viewBox="0 0 300 180" role="img" aria-label="Color">
+        <path fill="#e53b2f" d="M55 42c18-25 58-17 61 12 22-13 47 8 35 29 19 18 4 47-21 43-4 27-41 35-57 14-22 13-48-7-37-31-25-9-24-45 2-52-3-7 3-11 17-15z"/>
+        <path fill="#2670d8" d="M168 49c13-27 55-23 64 4 24-10 44 13 29 34 17 21-3 47-28 39-9 25-45 25-56 2-25 8-44-17-27-37-21-16-7-47 18-42z"/>
+        <circle cx="39" cy="132" r="8" fill="#e53b2f"/><circle cx="263" cy="47" r="7" fill="#2670d8"/>
+      </svg>
+    </div>
+    <div id="pictoShape" class="rule-picto" aria-label="Forma" hidden>
+      <!-- Formas geométricas del vocabulario pictográfico ARASAAC -->
+      <svg viewBox="0 0 300 180" role="img" aria-label="Forma">
+        <circle cx="65" cy="90" r="42" fill="none" stroke="#111" stroke-width="12"/>
+        <rect x="128" y="48" width="84" height="84" fill="none" stroke="#111" stroke-width="12"/>
+        <path d="M252 45 291 130h-78z" fill="none" stroke="#111" stroke-width="12" stroke-linejoin="round"/>
+      </svg>
+    </div>
+  </div>
+ </header>
+ <main class="stage">
+   <section class="object-wrap"><div id="object" class="object"></div><div id="feedback" class="feedback"></div></section>
+   <section class="destinations">
+     <button class="dest" id="left" aria-label="Caja izquierda"><div class="box"><div class="slot"></div><div class="model red" data-model="circle">●</div></div></button>
+     <button class="dest" id="right" aria-label="Caja derecha"><div class="box"><div class="slot"></div><div class="model blue" data-model="star">★</div></div></button>
+   </section>
+ </main>
+ <footer class="footer">Referencia pictográfica: Sergio Palao · ARASAAC · CC BY-NC-SA · Gobierno de Aragón</footer>
+</div>
+
+<div class="intro" id="intro">
+ <div><h1>⚙️ La Máquina Loca</h1><p>Prototipo V0.1 · Flexibilidad cognitiva</p><button class="start" id="start">▶</button></div>
+</div>
+<div class="overlay" id="overlay"><div><div class="gear">⚙️</div><div id="changeCue" class="change-shapes">● ★</div></div></div>
+<div class="end" id="end"><div class="panel"><h1>¡Terminado!</h1><div id="summary" class="summary"></div><div class="actions"><button class="start" onclick="location.reload()">↻</button><button class="secondary" onclick="location.href='../index.html'">⌂ Índice</button></div></div></div>
+
+<script>
+/*
+ LA MÁQUINA LOCA V0.1
+ Núcleo: DCCS 2x2. Dos cajas permanentes:
+ izquierda = rojo + círculo; derecha = azul + estrella.
+ Estímulos siempre conflictivos: rojo+estrella / azul+círculo.
+ 6 ensayos COLOR -> cambio explícito -> 6 ensayos FORMA.
+*/
+const $=s=>document.querySelector(s);
+let rule='color', trial=0, attempt=1, locked=false, helpLevel=0, records=[];
+let sequence=[];
+
+function makeBlock(){
+  // 3 A + 3 B; nunca ABABAB y nunca más de dos iguales consecutivos.
+  const candidates=["AABABB","AABBAB","ABAABB","ABBAAB","ABBABA","BAABBA","BAABAB","BABBAA","BBAABA","BABAAB"];
+  return candidates[Math.floor(Math.random()*candidates.length)].split("");
+}
+function newGame(){
+ sequence=[...makeBlock(),...makeBlock()];
+ rule='color'; trial=0; attempt=1; helpLevel=0; records=[]; locked=false;
+ showRule(); renderTrial();
+}
+function stimulus(code){return code==='A'?{color:'red',shape:'star'}:{color:'blue',shape:'circle'}}
+function icon(shape){return shape==='star'?'★':'●'}
+function correctSide(o){
+ if(rule==='color') return o.color==='red'?'left':'right';
+ return o.shape==='circle'?'left':'right';
+}
+function oldSide(o){return o.color==='red'?'left':'right'}
+function renderTrial(){
+ const o=stimulus(sequence[trial]);
+ const el=$('#object'); el.className='object '+o.color; el.textContent=icon(o.shape);
+ $('#feedback').textContent=''; attempt=1; helpLevel=0; locked=false;
+}
+function showRule(){
+ $('#pictoColor').hidden = rule !== 'color';
+ $('#pictoShape').hidden = rule !== 'shape';
+}
+function choose(side){
+ if(locked)return;
+ const o=stimulus(sequence[trial]), correct=side===correctSide(o);
+ records.push({trial:trial+1,block:rule,stimulus:sequence[trial],attempt,side,correct,
+   oldRuleCompatible:rule==='shape' && side===oldSide(o),helpLevel});
+ if(correct){ success(); } else { fail(); }
+}
+function success(){
+ locked=true; $('#feedback').textContent='✨';
+ setTimeout(()=>{
+   trial++;
+   if(trial===6){transition();return}
+   if(trial>=12){finish();return}
+   renderTrial();
+ },520);
+}
+function fail(){
+ const el=$('#object');
+ $('#feedback').textContent='';
+ el.classList.remove('error-shake');
+ void el.offsetWidth;
+ el.classList.add('error-shake');
+ setTimeout(()=>el.classList.remove('error-shake'),520);
+ if(attempt===1){attempt++; return} // primer error: feedback neutral, sin pista
+ helpLevel=Math.min(4,helpLevel+1); attempt++; giveHelp(helpLevel);
+}
+function giveHelp(level){
+ if(level===1){ $('#ruleCard').classList.add('pulse'); setTimeout(()=>$('#ruleCard').classList.remove('pulse'),1200); }
+ if(level===2){ $('#object').classList.add('pulse'); setTimeout(()=>$('#object').classList.remove('pulse'),1200); }
+ if(level===3){
+   document.querySelectorAll('.model').forEach(x=>x.classList.add('pulse-model'));
+   setTimeout(()=>document.querySelectorAll('.model').forEach(x=>x.classList.remove('pulse-model')),1200);
+ }
+ if(level>=4){
+   const o=stimulus(sequence[trial]), side=correctSide(o), target=$('#'+side);
+   target.classList.add('pulse'); setTimeout(()=>target.classList.remove('pulse'),1400);
+ }
+}
+function transition(){
+ locked=true; $('#object').style.visibility='hidden';
+ $('#overlay').classList.add('show');
+ setTimeout(()=>{rule='shape';showRule();},700);
+ setTimeout(()=>{
+   $('#overlay').classList.remove('show');
+   document.querySelectorAll('.model').forEach(x=>x.classList.add('pulse-model'));
+   setTimeout(()=>document.querySelectorAll('.model').forEach(x=>x.classList.remove('pulse-model')),1000);
+   $('#object').style.visibility='visible'; renderTrial();
+ },2100);
+}
+function finish(){
+ locked=true;
+ const first=records.filter(r=>r.attempt===1);
+ const pre=first.filter(r=>r.block==='color'), post=first.filter(r=>r.block==='shape');
+ const ncorrect=a=>a.filter(x=>x.correct).length;
+ const old=post.filter(x=>!x.correct&&x.oldRuleCompatible).length;
+ const maxHelp=Math.max(0,...records.filter(x=>x.block==='shape').map(x=>x.helpLevel));
+ const seq=post.map(x=>x.correct?'✓':'○').join(' ');
+ $('#summary').innerHTML=`
+ <b>Regla inicial · COLOR</b><br>${ncorrect(pre)}/${pre.length} primeros intentos correctos.<br><br>
+ <b>Cambio COLOR → FORMA</b><div class="sequence">${seq}</div>
+ ${ncorrect(post)}/${post.length} primeros intentos correctos.<br>
+ Respuestas de primer intento compatibles con la regla anterior: <b>${old}</b>.<br>
+ Máximo nivel de ayuda utilizado tras el cambio: <b>${maxHelp}</b>.
+ <div class="help-label">○ = respuesta inicial no correcta. El prototipo registra conducta observable; no realiza interpretaciones diagnósticas.</div>`;
+ $('#end').style.display='grid';
+}
+$('#left').onclick=()=>choose('left'); $('#right').onclick=()=>choose('right');
+$('#start').onclick=()=>{$('#intro').style.display='none';newGame()};
+</script>
+</body></html>
