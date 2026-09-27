@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>El paseo de la hormiga · Primer prototipo</title>
+<style>
+  :root { color-scheme: light; font-family: system-ui, sans-serif; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
+  body { background: #faf5df; }
+  #field { position: fixed; inset: 0; overflow: hidden; cursor: none; touch-action: none; background: radial-gradient(circle at 50% 40%, #fffaf0, #f3edce); }
+  #field.outside { cursor: default; }
+  #ant { position: absolute; width: 72px; height: 72px; transform: translate(-50%, -50%); pointer-events: none; z-index: 3; filter: drop-shadow(0 3px 2px #59462b35); }
+  #ant svg { width: 100%; height: 100%; overflow: visible; }
+  #ant.walking svg { animation: bob .19s ease-in-out infinite alternate; }
+  @keyframes bob { to { transform: translateY(-2px); } }
+  #flower { position: absolute; width: 104px; height: 104px; transform: translate(-50%, -50%); pointer-events: none; display: none; z-index: 2; }
+  #flower svg { width: 100%; height: 100%; filter: drop-shadow(0 3px 2px #725c3030); }
+  #flower.found svg { animation: greet .7s ease-in-out; }
+  @keyframes greet { 50% { transform: rotate(14deg) scale(1.13); } }
+  #hint { position: absolute; bottom: 26px; left: 50%; transform: translateX(-50%); display: none; align-items: center; gap: 12px; padding: 12px 18px; border-radius: 22px; background: #fffdf3; border: 2px solid #8d7450; box-shadow: 0 3px 12px #49382022; color: #3b3529; font-size: clamp(17px,2.2vw,23px); font-weight: 700; pointer-events: none; z-index: 5; white-space: nowrap; }
+  #hint svg { width: 55px; height: 46px; flex: none; }
+  #hint .arrow { display: inline-block; animation: nudge 1.4s ease-in-out infinite alternate; font-size: 27px; }
+  @keyframes nudge { to { transform: translateX(12px); } }
+  #back { position: absolute; top: 14px; left: 14px; z-index: 6; color: #493a29; background: #fffdf2; border: 1px solid #998568; border-radius: 16px; padding: 9px 13px; font-size: 15px; text-decoration: none; cursor: pointer; }
+  #back:focus-visible { outline: 3px solid #2054aa; }
+  #status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+  @media (max-width: 560px) { #ant { width: 60px; height: 60px; } #flower { width: 88px; height: 88px; } #hint { white-space: normal; width: max-content; max-width: calc(100% - 28px); } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<main id="field" aria-label="Mueve el ratón para guiar la hormiga hasta las flores">
+  <a id="back" href="../">← Inicio</a>
+  <div id="flower" aria-hidden="true"><svg viewBox="0 0 100 100"><path d="M49 53 Q43 78 53 97" stroke="#42894b" stroke-width="6" fill="none"/><path d="M48 75 Q29 59 29 79 Q40 88 48 75M51 83 Q72 67 72 83 Q64 93 51 83" fill="#65a763"/><g fill="#e9974a"><ellipse cx="50" cy="22" rx="13" ry="19"/><ellipse cx="76" cy="40" rx="13" ry="19" transform="rotate(65 76 40)"/><ellipse cx="66" cy="66" rx="13" ry="19" transform="rotate(140 66 66)"/><ellipse cx="33" cy="66" rx="13" ry="19" transform="rotate(220 33 66)"/><ellipse cx="24" cy="40" rx="13" ry="19" transform="rotate(295 24 40)"/></g><circle cx="50" cy="47" r="17" fill="#f8d767"/></svg></div>
+  <div id="ant" aria-hidden="true"><svg viewBox="0 0 80 80"><g stroke="#503324" stroke-width="3" stroke-linecap="round" fill="none"><path d="M32 35 13 23M30 43 9 42M33 51 15 64M49 35 67 23M50 43 71 42M48 51 65 64M33 24 24 10M45 24 54 10"/></g><ellipse cx="39" cy="54" rx="19" ry="16" fill="#9a5739"/><ellipse cx="40" cy="40" rx="15" ry="14" fill="#b9784d"/><circle cx="40" cy="27" r="15" fill="#ae6946"/><circle cx="34" cy="24" r="2.8" fill="#26201d"/><circle cx="46" cy="24" r="2.8" fill="#26201d"/><path d="M37 32 Q40 35 43 32" stroke="#492d27" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
+  <div id="hint" aria-hidden="true"><svg viewBox="0 0 62 50"><rect x="16" y="2" width="30" height="45" rx="14" fill="#e9e1d4" stroke="#534b41" stroke-width="3"/><path d="M31 3v21M17 23h28" stroke="#534b41" stroke-width="2"/><path d="M31 8v12" stroke="#bb7342" stroke-width="5" stroke-linecap="round"/></svg><span>Mueve el ratón</span><span class="arrow">↔</span></div>
+  <span id="status" role="status" aria-live="polite"></span>
+</main>
+<script>
+(() => {
+  const field = document.getElementById('field');
+  const ant = document.getElementById('ant');
+  const flower = document.getElementById('flower');
+  const hint = document.getElementById('hint');
+  const status = document.getElementById('status');
+  const back = document.getElementById('back');
+  let x = innerWidth / 2, y = innerHeight / 2;
+  let fx = 0, fy = 0, started = false, phase = 'discover';
+  let distance = 0, previousX = null, previousY = null, goals = 0;
+  let lastMove = performance.now(), walkingTimer, nextTimer;
+  const directions = [[1, 0],[-1, 0],[0,-1],[0,1],[.8,-.6],[-.8,.6]];
+  function placeAnt() { ant.style.left = x + 'px'; ant.style.top = y + 'px'; }
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+  function target() {
+    const [dx,dy] = directions[goals % directions.length];
+    const edge = 105, offset = Math.min(225, Math.max(125, Math.min(innerWidth, innerHeight) * .28));
+    let nx = clamp(x + dx * offset, edge, innerWidth - edge);
+    let ny = clamp(y + dy * offset, edge, innerHeight - edge);
+    // If a screen edge prevented that direction, use the opposite side.
+    if (Math.hypot(nx-x, ny-y) < 95) { nx = clamp(x - dx * offset, edge, innerWidth-edge); ny = clamp(y - dy * offset, edge, innerHeight-edge); }
+    fx = nx; fy = ny;
+    flower.style.left = fx + 'px'; flower.style.top = fy + 'px';
+    flower.classList.remove('found'); flower.style.display = 'block';
+    phase = 'reach'; status.textContent = 'Lleva la hormiga hasta la flor.';
+  }
+  function arrive() {
+    phase = 'celebrate'; goals++;
+    flower.classList.add('found'); status.textContent = 'La hormiga ha llegado a la flor.';
+    nextTimer = setTimeout(target, 1200);
+  }
+  function move(e) {
+    if (e.pointerType === 'touch') return;
+    if (e.target === back || back.contains(e.target)) return;
+    const nx = clamp(e.clientX, 0, innerWidth), ny = clamp(e.clientY, 0, innerHeight);
+    const step = previousX === null ? 0 : Math.hypot(nx-previousX, ny-previousY);
+    previousX = nx; previousY = ny; x = nx; y = ny; placeAnt();
+    if (step > 1) { distance += Math.min(step,80); started = true; lastMove = performance.now(); hint.style.display = 'none'; ant.classList.add('walking'); clearTimeout(walkingTimer); walkingTimer = setTimeout(() => ant.classList.remove('walking'), 180); }
+    if (phase === 'discover' && distance >= 110) target();
+    if (phase === 'reach' && Math.hypot(x-fx,y-fy) < 70) arrive();
+  }
+  field.addEventListener('pointermove', move);
+  field.addEventListener('pointerleave', () => { field.classList.add('outside'); ant.style.visibility = 'hidden'; previousX = null; previousY = null; });
+  field.addEventListener('pointerenter', e => { field.classList.remove('outside'); if(e.pointerType !== 'touch') ant.style.visibility = 'visible'; });
+  field.addEventListener('pointerdown', e => { if(e.pointerType === 'touch') e.preventDefault(); });
+  setInterval(() => { if (phase === 'discover' && performance.now() - lastMove > 6500 && !started) hint.style.display = 'flex'; }, 500);
+  addEventListener('resize', () => { x = clamp(x,0,innerWidth); y = clamp(y,0,innerHeight); placeAnt(); if(phase === 'reach') target(); });
+  addEventListener('pagehide', () => { clearTimeout(nextTimer); clearTimeout(walkingTimer); });
+  placeAnt();
+})();
+</script>
+</body>
+</html>
